@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Fieldwork</title>
+    <style>
+      body { margin: 12vh auto; max-width: 36rem; padding: 0 1.5rem; color: #032147; font: 1rem/1.5 system-ui, sans-serif; }
+      h1 { border-bottom: 3px solid #ecad0a; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Hello from Fieldwork</h1>
+      <p>API status: <output id="status">Checking...</output></p>
+    </main>
+    <script type="module">
+      const output = document.getElementById("status");
+      try {
+        const response = await fetch("/api/health");
+        if (!response.ok) throw new Error("Health check failed");
+        const health = await response.json();
+        output.textContent = health.status;
+      } catch {
+        output.textContent = "Unavailable";
+      }
+    </script>
+  </body>
+</html>

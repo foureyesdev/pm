@@ -6,15 +6,17 @@
 - [x] Document the frontend entry points, state, interactions, and test commands in `frontend/AGENTS.md`.
 - [x] Incorporate the storage decisions. Document the relational schema in JSON, store columns and cards in separate SQLite tables, and retain each user's conversation across reload and logout.
 - [x] **Verify** the frontend guide against the source and package scripts. Trace the MVP requirements to the implementation steps and acceptance checks below.
-- [ ] **Acceptance:** The user reviews and approves this plan before Part 2 begins.
+- [x] **Acceptance:** The user reviews and approves this plan before Part 2 begins.
 
 ## Part 2. Run a FastAPI scaffold in Docker
 
-- [ ] Set up a Python project under `backend/` with FastAPI and uv. Resolve current compatible dependencies and commit the lockfile. Describe the backend entry point in `backend/AGENTS.md`.
-- [ ] Build one local application container. Serve a small HTML page at `/` that fetches `/api/health` and displays the response. Keep API paths distinct from static routes.
-- [ ] Add start and stop scripts under `scripts/` for Windows PowerShell and for macOS/Linux shell. Have them use the same container configuration, local port, and persistent data volume. Exclude the root `.env` from the image.
-- [ ] **Test** the health endpoint and page response. Build and start the container, open the page, verify the fetched status, stop it, and start it again. Exercise the scripts on their supported platforms and record any platform still unverified.
-- [ ] **Acceptance:** From a fresh checkout with Docker available, the start script brings up a page that displays a successful API response. The stop script releases the port and preserves the data volume.
+- [x] Set up a Python project under `backend/` with FastAPI and uv. Resolve current compatible dependencies and commit the lockfile. Describe the backend entry point in `backend/AGENTS.md`.
+- [x] Build one local application container. Serve a small HTML page at `/` that fetches `/api/health` and displays the response. Keep API paths distinct from static routes.
+- [x] Add start and stop scripts under `scripts/` for Windows PowerShell and for macOS/Linux shell. Have them use the same container configuration, local port, and persistent data volume. Exclude the root `.env` from the image.
+- [x] **Test** the health endpoint and page response. Build and start the container, open the page, verify the fetched status, stop it, and start it again. Exercise the scripts on their supported platforms and record any platform still unverified.
+- [x] **Acceptance:** From a fresh checkout with Docker available, the start script brings up a page that displays a successful API response. The stop script releases the port and preserves the data volume.
+
+Verified with Windows PowerShell and Ubuntu under WSL using the Windows Docker CLI. Chromium displayed the fetched status, all three HTTP tests passed, stopping released port 8000, and a test file survived container recreation in the named volume. Native macOS verification is pending.
 
 ## Part 3. Serve the existing Next.js board from FastAPI
 
