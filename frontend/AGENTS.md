@@ -1,12 +1,12 @@
 # Fieldwork frontend
 
-The Next.js App Router demo opens the "Website launch" board at `/`. The board lives in React state. Reloading the page restores the five sample columns and twelve cards.
+The Next.js App Router demo checks the session at `/`. Sign in with `user` and `password` to open the "Website launch" board. Reloading keeps the session and restores the five sample columns and twelve cards from React's initial state.
 
 ## Where to make a change
 
 | File | Responsibility |
 | --- | --- |
-| `app/layout.tsx`, `app/page.tsx` | Document metadata, workspace header, project description, and board entry point. The header's "Local session" tooltip describes the demo's reload behavior. |
+| `app/layout.tsx`, `app/page.tsx` | Document metadata, session lookup, sign-in form, workspace header with logout, and board entry point. |
 | `app/globals.css`, `app/page.module.css`, `app/board/board.module.css` | Shared palette and bundled DM Sans font, page layout, and board styles respectively. |
 | `app/board/seed.ts` | Starting columns and cards in display order. The fixed stage IDs are `backlog`, `ready`, `progress`, `review`, and `done`. |
 | `app/board/model.ts` | TypeScript types and pure reducer for renaming columns and adding, deleting, or moving cards. A move identifies the card, destination column, and optional `beforeId`. Omitting the anchor or passing `null` appends the card. |
@@ -20,7 +20,7 @@ The demo supports moving and reordering by pointer, keyboard, and touch. Cards w
 
 Run these commands from `frontend/`.
 
-- Install the locked dependencies with `npm ci`. Start the development server with `npm run dev`.
+- Install the locked dependencies with `npm ci`. Start the project container, then run `npm run dev` for the frontend development server. It forwards `/api/` requests to FastAPI on port 8000.
 - Run `npm run lint`, `npm run typecheck`, and `npm test`. Vitest runs the reducer and React control tests in `tests/unit/` using jsdom.
 - `npm run build` exports the site to `out/`. The Docker build copies this directory into the FastAPI runtime.
 - Install the browsers with `npx playwright install`, then run `npm run test:e2e` with Docker running. Playwright uses the packaged app on port 8000 and starts it with `npm start` if needed. If the container is already running, rerun the project start script after source changes to rebuild it before testing.

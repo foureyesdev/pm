@@ -18,7 +18,14 @@
 .identity { gap: .65rem; }
 .wordmark { font-size: 1.44rem; font-weight: 790; letter-spacing: -.065em; }
 .workspace { margin-left: .65rem; padding-left: 1.25rem; border-left: 1px solid #dbe0e6; font-size: .9rem; color: var(--muted); }
-.session { gap: .5rem; color: var(--muted); font-size: .875rem; }
+.session { gap: .5rem; padding: .5rem .8rem; border: 1px solid #d8e1e9; border-radius: .5rem; background: white; font-size: .875rem; }
+.signIn { display: grid; gap: 1.25rem; width: 100%; max-width: 25rem; margin: clamp(2rem, 9vh, 6rem) auto; padding: clamp(1.5rem, 5vw, 2.5rem); background: white; border: 1px solid #d8e1e9; border-radius: 1rem; }
+.signIn h1 { font-size: 1.85rem; letter-spacing: -.05em; }
+.signIn h1::after { content: ""; display: block; width: 2.65rem; height: 3px; background: var(--yellow); margin-top: .65rem; }
+.signIn label { display: grid; gap: .4rem; font-weight: 600; }
+.signIn input { width: 100%; padding: .65rem .75rem; border: 1px solid #97a5b4; border-radius: .45rem; }
+.signIn button { border: 0; border-radius: .5rem; background: var(--purple); color: white; font-weight: 650; padding: .75rem; }
+.signIn [role="alert"] { color: #963549; }
 .main { padding-block: 1.75rem 2rem; }
 
 .project {

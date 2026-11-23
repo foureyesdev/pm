@@ -17,7 +17,9 @@ class PackagedSiteTests(unittest.TestCase):
     def test_home_page(self):
         with urlopen(self.base_url, timeout=5) as response:
             self.assertEqual(response.headers.get_content_type(), "text/html")
-            self.assertIn("<h1>Website launch</h1>", response.read().decode())
+            html = response.read().decode()
+            self.assertIn("Checking session", html)
+            self.assertNotIn("Audit existing content", html)
 
     def test_unknown_api_route(self):
         with self.assertRaises(HTTPError) as error:

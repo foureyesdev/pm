@@ -30,10 +30,12 @@ Verified against the running Docker image. Lint, type checking, 18 unit tests, t
 
 ## Part 4. Add sign-in and logout
 
-- [ ] Add FastAPI session creation, session lookup, and logout. Accept the MVP credentials `user` and `password` on the server and identify the signed-in user with an HTTP-only session cookie.
-- [ ] Have the frontend check the session before showing the board at `/`. Provide a labeled sign-in form, invalid-credentials feedback, and a logout control. Use the same session check for protected API routes in later parts.
-- [ ] **Test** valid and invalid credentials, anonymous session lookup, reload while signed in, logout, and attempted reuse of a logged-out session. Update board browser tests to sign in and add a test starting with a fresh browser session.
-- [ ] **Acceptance:** A fresh visit shows sign-in. Valid credentials open the board, a reload keeps the user signed in, and logout returns the user to sign-in and invalidates the session.
+- [x] Add FastAPI session creation, session lookup, and logout. Accept the MVP credentials `user` and `password` on the server and identify the signed-in user with an HTTP-only session cookie.
+- [x] Have the frontend check the session before showing the board at `/`. Provide a labeled sign-in form, invalid-credentials feedback, and a logout control. Use the same session check for protected API routes in later parts.
+- [x] **Test** valid and invalid credentials, anonymous session lookup, reload while signed in, logout, and attempted reuse of a logged-out session. Update board browser tests to sign in and add a test starting with a fresh browser session.
+- [x] **Acceptance:** A fresh visit shows sign-in. Valid credentials open the board, a reload keeps the user signed in, and logout returns the user to sign-in and invalidates the session.
+
+Verified with the Docker app. All 18 unit tests, six HTTP tests, and 25 browser cases passed. The fresh-session flow covers invalid credentials, sign-in, reload, and logout on all four browser configurations. The API test confirms the server rejects a revoked cookie. Sessions last for the lifetime of the running backend process.
 
 ## Part 5. Design the relational SQLite schema
 

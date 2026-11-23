@@ -1,5 +1,6 @@
 import { setTimeout as hold } from "node:timers/promises";
-import { expect, test, type CDPSession } from "@playwright/test";
+import { expect, type CDPSession } from "@playwright/test";
+import { test } from "./signed-in";
 
 type Point = { x: number; y: number };
 
