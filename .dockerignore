@@ -1,8 +1,15 @@
 **
 !Dockerfile
 !backend/
+backend/*
 !backend/pyproject.toml
 !backend/uv.lock
 !backend/main.py
-!backend/static/
-!backend/static/**
+!frontend/
+frontend/*
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/next.config.mjs
+!frontend/tsconfig.json
+!frontend/app/
+!frontend/app/**

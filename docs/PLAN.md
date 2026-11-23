@@ -20,11 +20,13 @@ Verified with Windows PowerShell and Ubuntu under WSL using the Windows Docker C
 
 ## Part 3. Serve the existing Next.js board from FastAPI
 
-- [ ] Configure a static Next.js export. Use a Node build stage to install the locked frontend dependencies and build the assets. Copy the export into the FastAPI runtime image and replace the scaffold page at `/`.
-- [ ] Serve the exported HTML, JavaScript, CSS, image, and font files with their expected paths. Keep the health route reachable and unknown API routes returning an API 404.
-- [ ] Point Playwright at the FastAPI-served build. Keep the current demo seed and reset-on-reload expectation for this milestone.
-- [ ] **Test** lint, type checking, Vitest, and the existing desktop and mobile Playwright suites. Check asset loading and the health route from the running container.
-- [ ] **Acceptance:** The container serves an interactive five-column, twelve-card board at `/`. Renaming, adding, deleting, and pointer, keyboard, and touch moves pass through the packaged site.
+- [x] Configure a static Next.js export. Use a Node build stage to install the locked frontend dependencies and build the assets. Copy the export into the FastAPI runtime image and replace the scaffold page at `/`.
+- [x] Serve the exported HTML, JavaScript, CSS, image, and font files with their expected paths. Keep the health route reachable and unknown API routes returning an API 404.
+- [x] Point Playwright at the FastAPI-served build. Keep the current demo seed and reset-on-reload expectation for this milestone.
+- [x] **Test** lint, type checking, Vitest, and the existing desktop and mobile Playwright suites. Check asset loading and the health route from the running container.
+- [x] **Acceptance:** The container serves an interactive five-column, twelve-card board at `/`. Renaming, adding, deleting, and pointer, keyboard, and touch moves pass through the packaged site.
+
+Verified against the running Docker image. Lint, type checking, 18 unit tests, three HTTP tests, and 21 browser tests passed. Chromium loaded the exported HTML, JavaScript, CSS, PNG, and WOFF2 assets without request or page errors. Firefox ran on the host after its sandboxed browser crashed opening a blank page.
 
 ## Part 4. Add sign-in and logout
 

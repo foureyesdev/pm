@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const baseURL = "http://127.0.0.1:3100";
+const baseURL = "http://127.0.0.1:8000";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -8,9 +8,10 @@ export default defineConfig({
   reporter: "list",
   use: { baseURL, trace: "retain-on-failure", screenshot: "only-on-failure" },
   webServer: {
-    command: "npm run start -- --hostname 127.0.0.1 --port 3100",
-    url: baseURL,
-    reuseExistingServer: false,
+    command: "npm start",
+    url: `${baseURL}/api/health`,
+    reuseExistingServer: true,
+    timeout: 300_000,
   },
   projects: [
     ...(["chromium", "firefox", "webkit"] as const).map((browserName) => ({

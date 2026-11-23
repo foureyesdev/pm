@@ -22,7 +22,8 @@ Run these commands from `frontend/`.
 
 - Install the locked dependencies with `npm ci`. Start the development server with `npm run dev`.
 - Run `npm run lint`, `npm run typecheck`, and `npm test`. Vitest runs the reducer and React control tests in `tests/unit/` using jsdom.
-- For the current browser suite, install the browsers with `npx playwright install`, then run `npm run build` followed by `npm run test:e2e`. Playwright starts the production Next.js server on port 3100.
+- `npm run build` exports the site to `out/`. The Docker build copies this directory into the FastAPI runtime.
+- Install the browsers with `npx playwright install`, then run `npm run test:e2e` with Docker running. Playwright uses the packaged app on port 8000 and starts it with `npm start` if needed. If the container is already running, rerun the project start script after source changes to rebuild it before testing.
 - `tests/e2e/board.spec.ts` covers desktop board interactions in Chromium, Firefox, and WebKit, including keyboard focus and reload. `tests/e2e/mobile.spec.ts` covers touch dragging, horizontal scrolling, and long text on an emulated Pixel 7.
 
 <!-- BEGIN:nextjs-agent-rules -->
