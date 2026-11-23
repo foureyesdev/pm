@@ -39,10 +39,12 @@ Verified with the Docker app. All 18 unit tests, six HTTP tests, and 25 browser 
 
 ## Part 5. Design the relational SQLite schema
 
-- [ ] Write `docs/schema.json` describing tables, fields, primary and foreign keys, ordering, and uniqueness. Propose users, one board per user, separate columns and cards tables, and ordered chat messages associated with the owning board.
-- [ ] In `docs/database.md`, explain how fixed stage IDs can recur across boards, how renamed columns retain their identity, and how card positions are updated when moving within or between columns. Describe first-use seeding, the database file's volume, and the lifetime of chat history after logout.
-- [ ] **Test the design** by parsing the JSON and tracing a two-user example. Walk through reordering two same-title cards by ID, moving one to an empty column, and retrieving the correct conversation after signing in again.
+- [x] Write `docs/schema.json` describing tables, fields, primary and foreign keys, ordering, and uniqueness. Propose users, one board per user, separate columns and cards tables, and ordered chat messages associated with the owning board.
+- [x] In `docs/database.md`, explain how fixed stage IDs can recur across boards, how renamed columns retain their identity, and how card positions are updated when moving within or between columns. Describe first-use seeding, the database file's volume, and the lifetime of chat history after logout.
+- [x] **Test the design** by parsing the JSON and tracing a two-user example. Walk through reordering two same-title cards by ID, moving one to an empty column, and retrieving the correct conversation after signing in again.
 - [ ] **Acceptance:** The documented relationships and constraints support those examples. Obtain user sign-off on the schema and database approach before implementing them in Part 6.
+
+Validated the [schema](schema.json) and [two-user walkthrough](database.md) in a temporary SQLite database. All five tables were created from the JSON definitions. Seven invalid writes were rejected. Reopening the file preserved each user's column names, card order, revision, and ordered chat history. Foreign-key and integrity checks passed.
 
 ## Part 6. Implement storage and authenticated board routes
 
