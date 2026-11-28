@@ -67,9 +67,11 @@ Verified with lint, type checking, 24 unit tests, 22 backend tests, and 31 brows
 
 ## Part 8. Verify backend connectivity to OpenRouter
 
-- [ ] Configure the backend to read `OPENROUTER_API_KEY` from the root `.env` at runtime and call `nvidia/nemotron-3-ultra-550b-a55b:free`. Keep the key in the backend and omit it from logs.
-- [ ] **Test** the client with a mocked successful response and provider errors. Run a separate live check from the container asking "What is 2+2?" and record the result. Keep routine tests independent of provider availability.
-- [ ] **Acceptance:** The configured model returns an answer equivalent to four in the live check. A failure is reported with enough detail to distinguish configuration, model availability, and provider errors.
+- [x] Configure the backend to read `OPENROUTER_API_KEY` from the root `.env` at runtime and call `nvidia/nemotron-3-ultra-550b-a55b:free`. Keep the key in the backend and omit it from logs.
+- [x] **Test** the client with a mocked successful response and provider errors. Run a separate live check from the container asking "What is 2+2?" and record the result. Keep routine tests independent of provider availability.
+- [x] **Acceptance:** The configured model returns an answer equivalent to four in the live check. A failure is reported with enough detail to distinguish configuration, model availability, and provider errors.
+
+Verified on 2026-11-27. The live check in the container replied "2 + 2 = 4". All 29 backend tests passed, including 7 client tests against a local stub server. They cover the request shape, a missing key, eleven HTTP error statuses mapped to configuration, model, or provider errors, a provider error inside a 200 response, malformed and empty replies, and an unreachable host. Every error and log line was checked for the key. The key reached the running container, but it was absent from the image's environment and build history and from the container logs.
 
 ## Part 9. Apply structured AI replies and persist chat
 

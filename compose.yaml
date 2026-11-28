@@ -3,6 +3,10 @@ services:
     build: .
     ports:
       - "127.0.0.1:${FIELDWORK_PORT:-8000}:8000"
+    # The root .env supplies OPENROUTER_API_KEY at runtime. It is excluded from the image.
+    env_file:
+      - path: .env
+        required: false
     volumes:
       - data:/data
     healthcheck:

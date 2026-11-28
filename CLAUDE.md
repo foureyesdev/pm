@@ -53,4 +53,5 @@ Backend dependencies are managed with uv; after editing `backend/pyproject.toml`
 
 - The installed Next.js (16.x) may differ from training data. Read the relevant guide in `frontend/node_modules/next/dist/docs/` before writing Next.js code.
 - `next dev` rewrites the `nextjs-agent-rules` block in `frontend/AGENTS.md`. Leave the block in place rather than deleting it from a diff.
-- `OPENROUTER_API_KEY` is in the root `.env`, which is excluded from the image. Pass it to the container at runtime when the AI parts are implemented.
+- `OPENROUTER_API_KEY` is in the root `.env`, which is excluded from the image. Compose loads it at runtime through an optional `env_file`. `backend/ai.py` is the only code that reads it. Live check: `docker compose exec app /app/.venv/bin/python ai.py`.
+- Python is not installed on the Windows host here. Run the backend tests with Python 3.14 in WSL: `wsl -e sh -c "cd /mnt/c/Users/loren/Desktop/Projects/pm && python3 -m unittest discover -s backend/tests"`.

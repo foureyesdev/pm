@@ -19,6 +19,8 @@ Board routes take JSON with camelCase fields and return the saved board (`title`
 | `DELETE /api/board/cards/{cardId}` | |
 | `POST /api/board/cards/{cardId}/move` | `{columnId, beforeId?}`; a null or omitted anchor appends |
 
+`ai.py` calls OpenRouter's chat completions endpoint with the model in `ai.MODEL`, using only the standard library. `complete(messages)` returns the reply text or raises `AIError`. Its `kind` is `configuration` (missing or rejected key, no credits), `model` (unknown ID, model down, or no provider serving it), or `provider` (rate limits, timeouts, unreachable host, malformed or empty replies). Compose passes `OPENROUTER_API_KEY` from the root `.env` at runtime. The key is excluded from the image and is never included in errors or logs. For the live check, run `docker compose exec app /app/.venv/bin/python ai.py`, which asks "What is 2+2?". `tests/test_ai.py` uses a local stub server and never contacts the provider.
+
 The Dockerfile copies every top-level `backend/*.py` module into the image.
 
 `tests/test_storage.py` runs against temporary databases without the container. Start the container with the project scripts. From the repository root, run `python -m unittest discover -s backend/tests` against the running service.
