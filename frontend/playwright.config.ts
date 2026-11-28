@@ -1,18 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const baseURL = "http://127.0.0.1:8000";
-
 export default defineConfig({
   testDir: "./tests/e2e",
-  workers: 2,
+  globalSetup: "./tests/e2e/global-setup.ts",
+  // Every test resets the one shared `user` board, so tests run one at a time.
+  workers: 1,
   reporter: "list",
-  use: { baseURL, trace: "retain-on-failure", screenshot: "only-on-failure" },
-  webServer: {
-    command: "npm start",
-    url: `${baseURL}/api/health`,
-    reuseExistingServer: true,
-    timeout: 300_000,
-  },
+  use: { baseURL: "http://127.0.0.1:8001", trace: "retain-on-failure", screenshot: "only-on-failure" },
   projects: [
     ...(["chromium", "firefox", "webkit"] as const).map((browserName) => ({
       name: browserName,

@@ -71,7 +71,10 @@
 .card[data-dragging] { border-color: var(--blue); box-shadow: 0 8px 24px #16365224; cursor: grabbing; }
 .cardTools { min-height: 1.5rem; margin: -.15rem -.35rem .22rem 0; gap: .05rem; }
 .cardAccent { width: 1.45rem; height: 4px; border-radius: 4px; background: var(--stage-color); margin-right: auto; }
-.handle, .delete {
+.card[data-editing] { cursor: auto; border-color: #c7b3d4; }
+.card[data-editing] .form { margin-top: 0; padding: 0; border: 0; }
+.cardTools [hidden] { display: none; }
+.handle, .edit, .delete {
   display: grid;
   place-items: center;
   width: 1.55rem;
@@ -84,8 +87,9 @@
 }
 .handle { color: var(--gray); cursor: grab; touch-action: none; }
 .handle:active { cursor: grabbing; }
-.delete { opacity: 0; color: #626e7b; }
-.card:hover .delete, .card:focus-within .delete { opacity: 1; }
+.edit, .delete { opacity: 0; color: #626e7b; }
+.card:hover :is(.edit, .delete), .card:focus-within :is(.edit, .delete) { opacity: 1; }
+.edit:hover, .edit:focus-visible { background: #e3f2fa; color: #126b95; }
 .delete:hover, .delete:focus-visible { background: #fae9e7; color: #9a3436; }
 .handle:hover, .handle:focus-visible { color: var(--navy); background: #edf1f7; }
 .card h4 { font-size: 1rem; line-height: 1.32; font-weight: 690; letter-spacing: -.024em; }
@@ -130,9 +134,27 @@
 .cancel { background: transparent; color: var(--muted); }
 .cancel:hover { background: #f0f2f5; }
 
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: 1rem;
+  padding: .65rem .65rem .65rem 1rem;
+  border: 1px solid #e2b9c2;
+  border-left: 4px solid #963549;
+  border-radius: 9px;
+  background: #fbf1f3;
+  color: #6f2536;
+  font-size: .9375rem;
+}
+.notice button { flex: none; border: 1px solid #d9a6b2; border-radius: 6px; padding: .4rem .7rem; background: #fff; font-size: .875rem; font-weight: 620; }
+.notice button:hover { background: #f7e3e8; }
+.loading { padding: 2rem 0; color: var(--muted); }
+
 @media (hover: none) {
-  .columnName svg, .delete { opacity: 1; }
-  .handle, .delete { width: 2rem; height: 2rem; }
+  .columnName svg, .edit, .delete { opacity: 1; }
+  .handle, .edit, .delete { width: 2rem; height: 2rem; }
 }
 @media (max-width: 700px) {
   .board { margin-top: 1.3rem; }

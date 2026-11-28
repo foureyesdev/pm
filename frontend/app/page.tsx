@@ -109,7 +109,10 @@ export default function Home() {
                 <i /><i /><i /><i /><i /><i /><i /><i />
               </div>
             </header>
-            <Board />
+            <Board onSignedOut={() => {
+              setError("Your session has ended. Sign in again.");
+              setSession("signedOut");
+            }} />
           </>
         )}
       </main>

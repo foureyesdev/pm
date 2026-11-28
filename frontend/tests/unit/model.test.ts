@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { boardReducer, type Column } from "../../app/board/model";
-import { initialBoard } from "../../app/board/seed";
 
 const original = { id: "one", title: "Launch notes", details: "Keep these details." };
 const duplicate = { id: "two", title: original.title, details: "A different card." };
@@ -11,16 +10,6 @@ const board: Column[] = [
   { id: "review", name: "Review", cards: [] },
   { id: "done", name: "Done", cards: [] },
 ];
-
-describe("sample board", () => {
-  it("opens with five ordered stages, each populated with uniquely identified cards", () => {
-    expect(initialBoard.map((column) => column.name)).toEqual(["Backlog", "Ready", "In progress", "Review", "Done"]);
-    expect(initialBoard.every((column) => column.cards.length > 0)).toBe(true);
-    const ids = initialBoard.flatMap((column) => column.cards.map((card) => card.id));
-    expect(ids).toHaveLength(12);
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-});
 
 describe("boardReducer", () => {
   it("renames a stage without changing its identity, contents, or position", () => {
@@ -34,19 +23,18 @@ describe("boardReducer", () => {
     expect(boardReducer(board, { type: "rename", columnId: "ready", name: "  " })).toBe(board);
   });
 
-  it("appends a trimmed card only to the chosen column", () => {
-    const next = boardReducer(board, {
-      type: "add", columnId: "ready", card: { id: "new", title: "  Brief  ", details: "  Two lines\nof copy.  " },
-    });
-    expect(next[1].cards).toEqual([duplicate, { id: "new", title: "Brief", details: "Two lines\nof copy." }]);
+  it("edits only the requested card, trimming its title and details in place", () => {
+    const next = boardReducer(board, { type: "edit", cardId: "two", title: "  Brief  ", details: "  Two lines\nof copy.  " });
+    expect(next[1].cards).toEqual([{ id: "two", title: "Brief", details: "Two lines\nof copy." }]);
     expect(next[0]).toBe(board[0]);
     expect(board[1].cards).toEqual([duplicate]);
   });
 
-  it("accepts a title-only card and rejects a whitespace-only title", () => {
-    const card = { id: "new", title: "Test mobile", details: "" };
-    expect(boardReducer(board, { type: "add", columnId: "review", card })[3].cards).toEqual([card]);
-    expect(boardReducer(board, { type: "add", columnId: "review", card: { ...card, title: "  " } })).toBe(board);
+  it("clears details and ignores a whitespace-only title or unknown card", () => {
+    expect(boardReducer(board, { type: "edit", cardId: "one", title: "Launch notes", details: "" })[0].cards)
+      .toEqual([{ ...original, details: "" }]);
+    expect(boardReducer(board, { type: "edit", cardId: "one", title: "  ", details: "" })).toBe(board);
+    expect(boardReducer(board, { type: "edit", cardId: "missing", title: "Title", details: "" })).toEqual(board);
   });
 
   it("deletes only the requested ID when equal titles share a column", () => {

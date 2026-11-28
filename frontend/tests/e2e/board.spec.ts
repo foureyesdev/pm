@@ -15,6 +15,13 @@ async function pickUp(page: Page, cardTitle: Locator) {
   await expect(page.locator("article[data-dragging]").first()).toBeVisible();
 }
 
+// Reload once every pending save has reached the server.
+async function reloadWhenSaved(page: Page) {
+  await expect(page.getByRole("region", { name: "Board view" })).toHaveAttribute("aria-busy", "false");
+  await page.reload();
+  await expect(page.getByRole("region", { name: / column$/ })).toHaveCount(5);
+}
+
 async function dragOver(page: Page, target: Locator) {
   const box = (await target.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + 48, { steps: 12 });
@@ -26,7 +33,7 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByRole("button", { name: "Move Audit existing content" })).toHaveAttribute("aria-describedby", /.+/);
 });
 
-test("creates, moves, and deletes a card on a renamed board, then restores the seed on reload", async ({ page }) => {
+test("creates, moves, and deletes a card on a renamed board, then keeps the changes after reload and sign-in", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Website launch" })).toBeVisible();
   await expect(page.getByRole("region", { name: / column$/ })).toHaveCount(5);
   await expect(page.getByRole("article")).toHaveCount(12);
@@ -55,10 +62,74 @@ test("creates, moves, and deletes a card on a renamed board, then restores the s
   await expect(moved).toHaveCount(0);
   await source.getByRole("article").first().hover();
   await source.getByRole("button", { name: "Delete Audit existing content" }).click();
-  await page.reload();
-  await expect(lane(page, "Ready")).toBeVisible();
-  await expect(source.getByRole("heading", { name: "Audit existing content" })).toBeVisible();
-  await expect(page.getByRole("article")).toHaveCount(12);
+  await reloadWhenSaved(page);
+  const saved = async () => {
+    await expect(lane(page, "Ready")).toHaveCount(0);
+    await expect(target.getByRole("heading", { level: 4 })).toHaveText(["Write homepage copy", "Prepare project imagery"]);
+    await expect(source.getByRole("heading", { level: 4 })).toHaveText(["Explore art direction", "Outline the journal"]);
+    await expect(page.getByRole("article")).toHaveCount(11);
+  };
+  await saved();
+
+  await page.getByRole("button", { name: "Log out" }).click();
+  await page.getByLabel("Username").fill("user");
+  await page.getByLabel("Password").fill("password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await saved();
+});
+
+test("edits a card in place, validates the title, and keeps the edit after reload", async ({ page }) => {
+  const ready = lane(page, "Ready");
+  const card = ready.getByRole("article", { name: "Write homepage copy" });
+  const edit = card.getByRole("button", { name: "Edit Write homepage copy" });
+  await card.hover();
+  await edit.click();
+  const form = ready.getByRole("form", { name: "Edit Write homepage copy" });
+  const title = form.getByLabel("Title", { exact: true });
+  await expect(title).toBeFocused();
+  await expect(title).toHaveValue("Write homepage copy");
+  await title.fill("Discarded title");
+  await page.keyboard.press("Escape");
+  await expect(edit).toBeFocused();
+  await expect(card).toContainText("Draft the opening headline");
+
+  await edit.click();
+  await title.fill("   ");
+  await expect(form.getByRole("button", { name: "Save" })).toBeDisabled();
+  await title.fill("Write launch copy");
+  await form.getByLabel(/Details/).fill("Headline, intro, and footer.");
+  await form.getByRole("button", { name: "Save" }).click();
+  const edited = ready.getByRole("article", { name: "Write launch copy" });
+  await expect(edited).toContainText("Headline, intro, and footer.");
+  await expect(edited.getByRole("button", { name: "Edit Write launch copy" })).toBeFocused();
+
+  await reloadWhenSaved(page);
+  await expect(ready.getByRole("heading", { level: 4 })).toHaveText(["Write launch copy", "Prepare project imagery"]);
+  await expect(edited).toContainText("Headline, intro, and footer.");
+  await expect(edited).not.toContainText("Draft the opening headline");
+});
+
+test("restores the saved order and reports the error when a move cannot be saved", async ({ page }) => {
+  const source = lane(page, "Backlog");
+  const target = lane(page, "Ready");
+  const original = ["Audit existing content", "Explore art direction", "Outline the journal"];
+  await page.route("**/api/board/cards/*/move", (route) => route.fulfill({ status: 500 }));
+  await source.getByRole("button", { name: "Move Audit existing content" }).focus();
+  await page.keyboard.press("Space");
+  await page.keyboard.press("ArrowRight");
+  await expect(target).toHaveAttribute("data-drop-target", "true");
+  await page.keyboard.press("Space");
+
+  const alert = page.getByRole("region", { name: "Board view" }).getByRole("alert");
+  await expect(alert).toContainText("could not be saved");
+  await expect(source.getByRole("heading", { level: 4 })).toHaveText(original);
+  await expect(target.getByRole("article")).toHaveCount(2);
+  await alert.getByRole("button", { name: "Dismiss" }).click();
+  await expect(alert).toHaveCount(0);
+
+  await page.unrouteAll();
+  await reloadWhenSaved(page);
+  await expect(source.getByRole("heading", { level: 4 })).toHaveText(original);
 });
 
 test("moves by keyboard into an empty column and returns focus to the moved card", async ({ page }) => {
@@ -78,6 +149,9 @@ test("moves by keyboard into an empty column and returns focus to the moved card
   await page.keyboard.press("Space");
   await expect(target.getByRole("heading", { name: "Audit existing content" })).toBeVisible();
   await expect(target.getByRole("button", { name: "Move Audit existing content" })).toBeFocused();
+  await expect(source.getByRole("article")).toHaveCount(2);
+  await reloadWhenSaved(page);
+  await expect(target.getByRole("heading", { level: 4 })).toHaveText(["Audit existing content"]);
   await expect(source.getByRole("article")).toHaveCount(2);
 });
 
@@ -130,8 +204,11 @@ test("handles blank names, cancelled drafts, blur commits, and title-only cards"
   await renamed.getByLabel("Title", { exact: true }).press("Enter");
   await expect(renamed.getByRole("article", { name: "Release checklist" })).toBeVisible();
   await expect(add).toBeFocused();
-  await page.reload();
-  await expect(page.getByRole("article", { name: "Release checklist" })).toHaveCount(0);
+  await reloadWhenSaved(page);
+  await expect(lane(page, "Design QA").getByRole("heading", { level: 4 })).toHaveText([
+    "Review the prototype", "Proofread the studio bio", "Release checklist",
+  ]);
+  await expect(page.getByRole("article", { name: "Release checklist" }).locator("p")).toHaveCount(0);
 });
 
 test("moves one column per arrow across a narrow, horizontally scrolling board", async ({ page }) => {
@@ -175,7 +252,7 @@ test("reorders cards in both directions with the mouse and keyboard", async ({ p
   await page.keyboard.press("Space");
   await expect(source).toHaveAttribute("data-drop-target", "true");
   await page.keyboard.press("ArrowUp");
-  await expect(source.locator("[data-insert-before]")).toHaveAttribute("data-card-id", "content-audit");
+  await expect(source.locator("[data-insert-before]")).toHaveAccessibleName("Audit existing content");
   await page.keyboard.press("Space");
   await expect(titles).toHaveText([second, first, third]);
   await expect(page.locator("[data-drop-target], [data-dragging], [data-dropping]")).toHaveCount(0);
@@ -183,7 +260,7 @@ test("reorders cards in both directions with the mouse and keyboard", async ({ p
   await page.keyboard.press("Space");
   await expect(source).toHaveAttribute("data-drop-target", "true");
   await page.keyboard.press("ArrowDown");
-  await expect(source.locator("[data-insert-before]")).toHaveAttribute("data-card-id", "journal");
+  await expect(source.locator("[data-insert-before]")).toHaveAccessibleName("Outline the journal");
   await page.keyboard.press("Escape");
   await expect(titles).toHaveText([second, first, third]);
 });

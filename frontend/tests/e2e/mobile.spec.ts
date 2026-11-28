@@ -73,9 +73,11 @@ test("reorders cards within a column by touch", async ({ page, context }) => {
   await touch(client, "touchStart", { x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 });
   await expect(page.locator("article[data-dragging]").first()).toBeVisible();
   await touch(client, "touchMove", { x: second.x + second.width / 2, y: second.y + second.height * 0.8 });
-  await expect(backlog.locator("[data-insert-before]")).toHaveAttribute("data-card-id", "journal");
+  await expect(backlog.locator("[data-insert-before]")).toHaveAccessibleName("Outline the journal");
   await touch(client, "touchEnd");
-  await expect(backlog.getByRole("heading", { level: 4 })).toHaveText([
-    "Explore art direction", "Audit existing content", "Outline the journal",
-  ]);
+  const reordered = ["Explore art direction", "Audit existing content", "Outline the journal"];
+  await expect(backlog.getByRole("heading", { level: 4 })).toHaveText(reordered);
+  await expect(page.getByRole("region", { name: "Board view" })).toHaveAttribute("aria-busy", "false");
+  await page.reload();
+  await expect(backlog.getByRole("heading", { level: 4 })).toHaveText(reordered);
 });

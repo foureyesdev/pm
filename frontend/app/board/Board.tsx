@@ -2,10 +2,10 @@
 
 import { DragDropProvider, KeyboardSensor, PointerSensor } from "@dnd-kit/react";
 import { Columns3, Grip } from "lucide-react";
-import { useReducer, useState } from "react";
+import { useState } from "react";
 import { BoardColumn } from "./BoardColumn";
 import { boardReducer } from "./model";
-import { initialBoard } from "./seed";
+import { useBoard } from "./useBoard";
 import styles from "./board.module.css";
 
 function otherCards(lane: Element, sourceId: string) {
@@ -67,22 +67,35 @@ const sensors = [
   ColumnKeyboardSensor,
 ];
 
-export function Board() {
-  const [columns, dispatch] = useReducer(boardReducer, initialBoard);
+export function Board({ onSignedOut }: { onSignedOut: () => void }) {
+  const { columns, loadFailed, saveFailed, saving, retry, change, dismissError } = useBoard(onSignedOut);
   const [beforeId, setBeforeId] = useState<string | null>(null);
-  const total = columns.reduce((count, column) => count + column.cards.length, 0);
+  const total = columns?.reduce((count, column) => count + column.cards.length, 0) ?? 0;
 
   return (
-    <section aria-labelledby="board-title" className={styles.board}>
+    <section aria-labelledby="board-title" aria-busy={saving} className={styles.board}>
       <div className={styles.toolbar}>
         <div className={styles.boardTitle}>
           <Columns3 size={19} aria-hidden="true" />
           <h2 id="board-title">Board view</h2>
-          <span className={styles.total}>{total} {total === 1 ? "card" : "cards"}</span>
+          {columns && <span className={styles.total}>{total} {total === 1 ? "card" : "cards"}</span>}
         </div>
         <p className={styles.hint}><Grip size={16} aria-hidden="true" /> Drag cards to reorder or move</p>
       </div>
-      <DragDropProvider
+      {saveFailed && (
+        <div role="alert" className={styles.notice}>
+          <p>Your last change could not be saved. The board shows your saved work.</p>
+          <button type="button" onClick={dismissError}>Dismiss</button>
+        </div>
+      )}
+      {loadFailed && (
+        <div role="alert" className={styles.notice}>
+          <p>The board could not be loaded.</p>
+          <button type="button" onClick={retry}>Try again</button>
+        </div>
+      )}
+      {!columns && !loadFailed && <p role="status" className={styles.loading}>Loading board…</p>}
+      {columns && <DragDropProvider
         sensors={sensors}
         onCollision={(event, manager) => {
           // After keyboard pickup, arrows select the lane independently of scroll geometry.
@@ -106,10 +119,9 @@ export function Board() {
           setBeforeId(null);
           if (!canceled && target?.element) {
             const y = nativeEvent instanceof PointerEvent ? nativeEvent.clientY : operation.position.current.y;
-            dispatch({
-              type: "move", cardId, columnId: String(target.id),
-              beforeId: beforeCard(target.element, cardId, y),
-            });
+            const move = { type: "move" as const, cardId, columnId: String(target.id), beforeId: beforeCard(target.element, cardId, y) };
+            // Dropping a card where it already is saves nothing.
+            if (boardReducer(columns, move) !== columns) change(move);
           }
           if (operation.activatorEvent instanceof KeyboardEvent) {
             requestAnimationFrame(() => document.getElementById(`move-${cardId}`)?.focus());
@@ -118,10 +130,10 @@ export function Board() {
       >
         <div className={styles.viewport} aria-label="Board columns" role="region" tabIndex={0}>
           <div className={styles.lanes}>
-            {columns.map((column) => <BoardColumn key={column.id} column={column} beforeId={beforeId} dispatch={dispatch} />)}
+            {columns.map((column) => <BoardColumn key={column.id} column={column} beforeId={beforeId} onChange={change} />)}
           </div>
         </div>
-      </DragDropProvider>
+      </DragDropProvider>}
     </section>
   );
 }

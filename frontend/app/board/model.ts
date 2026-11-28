@@ -10,13 +10,32 @@ export interface Column {
   cards: Card[];
 }
 
+export interface Board {
+  title: string;
+  description: string;
+  revision: number;
+  columns: Column[];
+}
+
+/** Changes the board shows before the server confirms them. */
 export type BoardAction =
   | { type: "rename"; columnId: string; name: string }
-  | { type: "add"; columnId: string; card: Card }
+  | { type: "edit"; cardId: string; title: string; details: string }
   | { type: "delete"; columnId: string; cardId: string }
   | { type: "move"; columnId: string; cardId: string; beforeId?: string | null };
 
+/** Every change the board can send. A new card appears once the server assigns its ID. */
+export type BoardChange = BoardAction | { type: "create"; columnId: string; title: string; details: string };
+
 export function boardReducer(columns: Column[], action: BoardAction): Column[] {
+  if (action.type === "edit") {
+    const title = action.title.trim();
+    if (!title) return columns;
+    return columns.map((column) => column.cards.some((card) => card.id === action.cardId)
+      ? { ...column, cards: column.cards.map((card) => card.id === action.cardId ? { ...card, title, details: action.details.trim() } : card) }
+      : column);
+  }
+
   const destination = columns.find((column) => column.id === action.columnId);
   if (!destination) return columns;
 
@@ -25,14 +44,6 @@ export function boardReducer(columns: Column[], action: BoardAction): Column[] {
       const name = action.name.trim();
       if (!name || name === destination.name) return columns;
       return columns.map((column) => column === destination ? { ...column, name } : column);
-    }
-    case "add": {
-      const title = action.card.title.trim();
-      if (!title) return columns;
-      const card = { ...action.card, title, details: action.card.details.trim() };
-      return columns.map((column) =>
-        column === destination ? { ...column, cards: [...column.cards, card] } : column
-      );
     }
     case "delete":
       return columns.map((column) =>

@@ -41,19 +41,51 @@ export function ColumnName({ name, onSave }: { name: string; onSave: (name: stri
   );
 }
 
+/** Title and details form shared by the new-card composer and the card editor. */
+export function CardForm({ label, submitLabel, initial, onSubmit, onCancel }: {
+  label: string;
+  submitLabel: string;
+  initial?: { title: string; details: string };
+  onSubmit: (title: string, details: string) => void;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState(initial?.title ?? "");
+  return (
+    <form
+      className={styles.form}
+      aria-label={label}
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!title.trim()) return;
+        const data = new FormData(event.currentTarget);
+        onSubmit(title.trim(), String(data.get("details") ?? "").trim());
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          onCancel();
+        }
+      }}
+    >
+      <label>Title<input autoFocus required value={title} onChange={(event) => setTitle(event.target.value)} /></label>
+      <label>Details <span>(optional)</span><textarea name="details" rows={3} defaultValue={initial?.details} /></label>
+      <div className={styles.formActions}>
+        <button className={styles.submit} type="submit" disabled={!title.trim()}>{submitLabel}</button>
+        <button className={styles.cancel} type="button" onClick={onCancel}>Cancel</button>
+      </div>
+    </form>
+  );
+}
+
 export function CardComposer({ columnName, onAdd }: {
   columnName: string;
   onAdd: (title: string, details: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState("");
   const trigger = useRef<HTMLButtonElement>(null);
 
   function close() {
-    flushSync(() => {
-      setTitle("");
-      setOpen(false);
-    });
+    flushSync(() => setOpen(false));
     trigger.current?.focus();
   }
 
@@ -66,29 +98,14 @@ export function CardComposer({ columnName, onAdd }: {
   }
 
   return (
-    <form
-      className={styles.form}
-      aria-label={`New card in ${columnName}`}
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (!title.trim()) return;
-        const data = new FormData(event.currentTarget);
-        onAdd(title.trim(), String(data.get("details") ?? "").trim());
+    <CardForm
+      label={`New card in ${columnName}`}
+      submitLabel="Add card"
+      onSubmit={(title, details) => {
+        onAdd(title, details);
         close();
       }}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") {
-          event.preventDefault();
-          close();
-        }
-      }}
-    >
-      <label>Title<input autoFocus required value={title} onChange={(event) => setTitle(event.target.value)} /></label>
-      <label>Details <span>(optional)</span><textarea name="details" rows={3} /></label>
-      <div className={styles.formActions}>
-        <button className={styles.submit} type="submit" disabled={!title.trim()}>Add card</button>
-        <button className={styles.cancel} type="button" onClick={close}>Cancel</button>
-      </div>
-    </form>
+      onCancel={close}
+    />
   );
 }

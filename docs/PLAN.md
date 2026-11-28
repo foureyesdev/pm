@@ -58,10 +58,12 @@ Verified with the Docker app and Python 3.14 under WSL. All 22 backend tests pas
 
 ## Part 7. Connect the frontend and add card editing
 
-- [ ] Load the signed-in user's board from the API. Wire the existing controls and drag handlers to the Part 6 routes. Replace the demo reset tooltip and show loading or save errors where the user can act on them.
-- [ ] Add an accessible editor for a card's title and details. Support saving and cancelling, preserve the card ID and position, and use the server's saved state to keep the board consistent after writes or failures.
-- [ ] **Test** editor validation, cancel, save, and failed writes. Give browser tests isolated starting data and replace reset-on-reload assertions with persistence checks. Exercise rename, create, edit, reorder, cross-column move, and delete through the packaged app, retaining keyboard and touch coverage.
-- [ ] **Acceptance:** After reload and after logout followed by sign-in, the board shows the saved names, card contents, and ordering. Cancelled edits and failed writes leave the board consistent with the database.
+- [x] Load the signed-in user's board from the API. Wire the existing controls and drag handlers to the Part 6 routes. Replace the demo reset tooltip and show loading or save errors where the user can act on them.
+- [x] Add an accessible editor for a card's title and details. Support saving and cancelling, preserve the card ID and position, and use the server's saved state to keep the board consistent after writes or failures.
+- [x] **Test** editor validation, cancel, save, and failed writes. Give browser tests isolated starting data and replace reset-on-reload assertions with persistence checks. Exercise rename, create, edit, reorder, cross-column move, and delete through the packaged app, retaining keyboard and touch coverage.
+- [x] **Acceptance:** After reload and after logout followed by sign-in, the board shows the saved names, card contents, and ordering. Cancelled edits and failed writes leave the board consistent with the database.
+
+Verified with lint, type checking, 24 unit tests, 22 backend tests, and 31 browser cases across Chromium, Firefox, WebKit, and the emulated Pixel 7. Browser tests run against a separate `fieldwork-e2e` Compose project on port 8001 with an empty volume. Each test starts from the sample board, so the app on port 8000 keeps its data. A failed save restores the server's order and shows a dismissible error. A failed load offers a retry, and an expired session returns to sign-in. No reset tooltip remained in the source or its history, so that item needed no change.
 
 ## Part 8. Verify backend connectivity to OpenRouter
 
