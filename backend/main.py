@@ -2,13 +2,17 @@ from pathlib import Path
 from secrets import token_urlsafe
 from typing import Annotated
 
-from fastapi import Cookie, Depends, FastAPI, HTTPException, Response
-from fastapi.responses import FileResponse
+from fastapi import Cookie, Depends, FastAPI, HTTPException, Request, Response
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
+
+import storage
 
 app = FastAPI(title="Fieldwork")
 static_dir = Path(__file__).parent / "static"
+store = storage.Store("/data/fieldwork.sqlite3")
 sessions: dict[str, str] = {}
 SessionCookie = Annotated[str | None, Cookie(alias="fieldwork_session")]
 
@@ -16,6 +20,30 @@ SessionCookie = Annotated[str | None, Cookie(alias="fieldwork_session")]
 class Credentials(BaseModel):
     username: str
     password: str
+
+
+class CamelModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel)
+
+
+class ColumnRename(BaseModel):
+    name: str
+
+
+class CardCreate(CamelModel):
+    column_id: str
+    title: str
+    details: str = ""
+
+
+class CardEdit(BaseModel):
+    title: str | None = None
+    details: str | None = None
+
+
+class CardMove(CamelModel):
+    column_id: str
+    before_id: str | None = None
 
 
 async def current_user(session: SessionCookie = None) -> str:
@@ -51,6 +79,54 @@ async def sign_out(session: SessionCookie = None) -> Response:
     response = Response(status_code=204)
     response.delete_cookie("fieldwork_session", httponly=True, samesite="strict")
     return response
+
+
+User = Annotated[str, Depends(current_user)]
+
+
+@app.exception_handler(storage.NotFound)
+async def not_found(request: Request, error: storage.NotFound) -> JSONResponse:
+    return JSONResponse({"detail": str(error)}, status_code=404)
+
+
+@app.exception_handler(storage.Invalid)
+async def invalid(request: Request, error: storage.Invalid) -> JSONResponse:
+    return JSONResponse({"detail": str(error)}, status_code=422)
+
+
+# Board routes are sync so SQLite calls run in the threadpool. Each returns the saved board.
+@app.get("/api/board")
+def get_board(username: User) -> dict:
+    return store.board(username)
+
+
+@app.patch("/api/board/columns/{column_id}")
+def rename_column(column_id: str, body: ColumnRename, username: User) -> dict:
+    return store.update(username, lambda db, board: storage.rename_column(db, board, column_id, body.name))
+
+
+@app.post("/api/board/cards", status_code=201)
+def create_card(body: CardCreate, username: User) -> dict:
+    return store.update(
+        username, lambda db, board: storage.create_card(db, board, body.column_id, body.title, body.details)
+    )
+
+
+@app.patch("/api/board/cards/{card_id}")
+def edit_card(card_id: str, body: CardEdit, username: User) -> dict:
+    return store.update(username, lambda db, board: storage.edit_card(db, board, card_id, body.title, body.details))
+
+
+@app.delete("/api/board/cards/{card_id}")
+def delete_card(card_id: str, username: User) -> dict:
+    return store.update(username, lambda db, board: storage.delete_card(db, board, card_id))
+
+
+@app.post("/api/board/cards/{card_id}/move")
+def move_card(card_id: str, body: CardMove, username: User) -> dict:
+    return store.update(
+        username, lambda db, board: storage.move_card(db, board, card_id, body.column_id, body.before_id)
+    )
 
 
 @app.get("/api/health")

@@ -48,11 +48,13 @@ Validated the [schema](schema.json) and [two-user walkthrough](database.md) in a
 
 ## Part 6. Implement storage and authenticated board routes
 
-- [ ] Create the SQLite database on first run using the approved schema. Enable foreign key enforcement and initialize each user's board with the five stages and sample cards exactly once.
-- [ ] Provide authenticated routes to load the ordered board, rename a column, and create, edit, delete, move, or reorder cards. Derive ownership from the session. Keep the move contract consistent with the frontend's destination column and optional insertion anchor.
-- [ ] Validate nonblank titles and column names, IDs, ownership, and the destination. Apply each mutation and its ordering changes in one transaction. Share this logic with the later AI integration.
-- [ ] **Test** storage and routes against temporary databases. Cover fresh and repeat initialization, all mutations, duplicate titles, empty destinations, invalid IDs or anchors, unauthorized requests, and isolation between two fixture users. Reopen the database and verify saved contents and order.
-- [ ] **Acceptance:** A signed-in user can retrieve and change only their board. Failed moves leave the original order intact, and restarting the container preserves successful changes.
+- [x] Create the SQLite database on first run using the approved schema. Enable foreign key enforcement and initialize each user's board with the five stages and sample cards exactly once.
+- [x] Provide authenticated routes to load the ordered board, rename a column, and create, edit, delete, move, or reorder cards. Derive ownership from the session. Keep the move contract consistent with the frontend's destination column and optional insertion anchor.
+- [x] Validate nonblank titles and column names, IDs, ownership, and the destination. Apply each mutation and its ordering changes in one transaction. Share this logic with the later AI integration.
+- [x] **Test** storage and routes against temporary databases. Cover fresh and repeat initialization, all mutations, duplicate titles, empty destinations, invalid IDs or anchors, unauthorized requests, and isolation between two fixture users. Reopen the database and verify saved contents and order.
+- [x] **Acceptance:** A signed-in user can retrieve and change only their board. Failed moves leave the original order intact, and restarting the container preserves successful changes.
+
+Verified with the Docker app and Python 3.14 under WSL. All 22 backend tests passed: 11 storage tests against temporary databases, including two-user isolation and reopening the file, and 5 route tests against the container. Route tests cover sign-in on every route, 13 rejected requests that leave the board and revision unchanged, and a create, move, edit, and delete lifecycle. Because the MVP has a single login, isolation between two users is tested at the storage layer. A renamed column and a reorder survived stopping and recreating the container. The change was then reverted. The server assigns new card IDs, so Part 7 replaces the client's `crypto.randomUUID()` with the ID from the saved board.
 
 ## Part 7. Connect the frontend and add card editing
 
