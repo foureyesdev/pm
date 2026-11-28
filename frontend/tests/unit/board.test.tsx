@@ -7,11 +7,11 @@ import type { Board as BoardData, Card } from "../../app/board/model";
 const audit = { id: "a", title: "Audit pages", details: "Old notes" };
 const brief = { id: "b", title: "Write brief", details: "" };
 
-function board(backlog: Card[]): BoardData {
+function board(backlog: Card[], revision = 0): BoardData {
   return {
     title: "Website launch",
     description: "",
-    revision: 0,
+    revision,
     columns: [
       { id: "backlog", name: "Backlog", cards: backlog },
       { id: "ready", name: "Ready", cards: [] },
@@ -22,26 +22,42 @@ function board(backlog: Card[]): BoardData {
   };
 }
 
-function reply(status: number, body?: BoardData) {
+function reply(status: number, body?: unknown) {
   return { ok: status < 400, status, json: async () => body } as Response;
 }
 
+// Board requests get the queued replies in order. The chat panel loads an empty history and
+// gets `chatReply` when a message is sent.
 const fetchMock = vi.fn<typeof fetch>();
-beforeEach(() => vi.stubGlobal("fetch", fetchMock));
+let boardReplies: Response[] = [];
+let chatReply: Response | undefined;
+beforeEach(() => {
+  vi.stubGlobal("fetch", fetchMock);
+  fetchMock.mockImplementation(async (path, init) => {
+    if (path === "/api/chat") return init?.method === "POST" ? chatReply! : reply(200, { messages: [] });
+    const next = boardReplies.shift();
+    if (!next) throw new Error(`Unexpected request ${init?.method ?? "GET"} ${path}`);
+    return next;
+  });
+});
 afterEach(() => {
   vi.unstubAllGlobals();
   fetchMock.mockReset();
 });
 
 async function renderBoard(...replies: Response[]) {
-  for (const response of replies) fetchMock.mockResolvedValueOnce(response);
+  boardReplies = replies;
   const onSignedOut = vi.fn();
   render(<Board onSignedOut={onSignedOut} />);
   return { user: userEvent.setup(), onSignedOut };
 }
 
+function boardCalls() {
+  return fetchMock.mock.calls.filter(([path]) => String(path).startsWith("/api/board"));
+}
+
 function sent(index: number) {
-  const [path, init] = fetchMock.mock.calls[index];
+  const [path, init] = boardCalls()[index];
   return { path, method: init?.method, body: init?.body && JSON.parse(String(init.body)) };
 }
 
@@ -77,7 +93,30 @@ describe("board", () => {
     else await user.keyboard(method);
     expect(screen.getByRole("button", { name: "Edit Audit pages" })).toHaveFocus();
     expect(screen.getByRole("article", { name: "Audit pages" })).toHaveTextContent("Old notes");
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(boardCalls()).toHaveLength(1);
+  });
+
+  it("shows cards changed by a chat turn without reloading", async () => {
+    const created = { id: "c", title: "Launch checklist", details: "" };
+    chatReply = reply(200, {
+      messages: [{ id: 1, role: "user", content: "Add a checklist" }, { id: 2, role: "assistant", content: "Added it." }],
+      board: board([audit, created], 1),
+    });
+    const { user } = await renderBoard(reply(200, board([audit])));
+    await user.type(await screen.findByRole("textbox", { name: "Message" }), "Add a checklist{Enter}");
+    expect(await screen.findByRole("article", { name: "Launch checklist" })).toBeVisible();
+    expect(boardCalls()).toHaveLength(1);
+  });
+
+  it("keeps a newer saved board when an older one arrives later", async () => {
+    chatReply = reply(200, { messages: [], board: board([audit, brief], 1) });
+    const { user } = await renderBoard(reply(200, board([audit, brief], 0)), reply(200, board([audit], 2)));
+    await user.click(await screen.findByRole("button", { name: "Delete Write brief" }));
+    await vi.waitFor(() => expect(boardCalls()).toHaveLength(2));
+    await user.type(screen.getByRole("textbox", { name: "Message" }), "Anything{Enter}");
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/chat", expect.objectContaining({ method: "POST" })));
+    await vi.waitFor(() => expect(screen.queryByText("Assistant is replying…")).not.toBeInTheDocument());
+    expect(screen.getAllByRole("article").map((card) => card.getAttribute("aria-label"))).toEqual(["Audit pages"]);
   });
 
   it("restores the saved board and reports a failed write", async () => {

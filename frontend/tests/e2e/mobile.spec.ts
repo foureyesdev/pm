@@ -46,6 +46,22 @@ test("swipes across all five columns and wraps long card text on a phone", async
   await expect(card).toHaveCount(0);
 });
 
+test("places the assistant below the board on a phone and applies its change", async ({ page, model }) => {
+  const board = page.getByRole("region", { name: "Board view" });
+  const panel = page.getByRole("complementary", { name: "Assistant" });
+  const boardBox = (await board.boundingBox())!;
+  const panelBox = (await panel.boundingBox())!;
+  expect(panelBox.y).toBeGreaterThanOrEqual(boardBox.y + boardBox.height);
+  expect(panelBox.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+
+  model.reply("Added a phone check to Backlog.", { type: "create", columnId: "backlog", title: "Check the phone layout" });
+  await panel.getByRole("textbox", { name: "Message" }).fill("Add a phone check to Backlog");
+  await panel.getByRole("button", { name: "Send" }).tap();
+  await expect(panel.getByRole("listitem").last()).toHaveText("AssistantAdded a phone check to Backlog.");
+  await expect(page.getByRole("region", { name: "Backlog column" }).getByRole("article", { name: "Check the phone layout" })).toHaveCount(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
 test("moves a card by touch using the grip on a phone", async ({ page, context }) => {
   const client = await context.newCDPSession(page);
   const handle = page.getByRole("button", { name: "Move Audit existing content" });

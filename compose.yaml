@@ -4,9 +4,12 @@ services:
     ports:
       - "127.0.0.1:${FIELDWORK_PORT:-8000}:8000"
     # The root .env supplies OPENROUTER_API_KEY at runtime. It is excluded from the image.
+    # Browser tests swap in frontend/tests/e2e/e2e.env, which points at a fake model on the host.
     env_file:
-      - path: .env
+      - path: ${FIELDWORK_ENV_FILE:-.env}
         required: false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - data:/data
     healthcheck:

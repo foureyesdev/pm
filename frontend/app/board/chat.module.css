@@ -1,0 +1,96 @@
+/* On wide screens the panel fills the board row and scrolls the conversation inside it, so a long
+   history never makes the page taller than the board. */
+.panel { position: relative; min-height: 30rem; }
+.inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  padding: 1rem;
+  border: 1px solid #dce1e6;
+  border-top: 3px solid var(--purple);
+  border-radius: 12px;
+  background: #fff;
+}
+.head { display: flex; align-items: flex-start; gap: .65rem; }
+.badge { flex: none; display: grid; place-items: center; width: 1.9rem; height: 1.9rem; border-radius: 8px; background: #efe6f4; color: var(--purple); }
+.head h2 { font-size: 1.05rem; font-weight: 710; letter-spacing: -.03em; }
+.head p { margin-top: .15rem; font-size: .875rem; color: var(--muted); }
+
+.log {
+  flex: 1;
+  min-height: 8rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: .25rem .15rem;
+  scrollbar-width: thin;
+}
+.log ol { display: grid; gap: .65rem; margin: 0; padding: 0; list-style: none; }
+.empty { padding: .9rem; border: 1px dashed #c9d1d9; border-radius: 9px; font-size: .9rem; line-height: 1.45; color: var(--muted); }
+.message { max-width: 92%; padding: .55rem .75rem .65rem; border-radius: 10px; overflow-wrap: anywhere; }
+.message p { font-size: .9375rem; line-height: 1.45; white-space: pre-wrap; }
+.message[data-role="user"] { justify-self: end; background: #e9f4fa; border: 1px solid #c6e2f1; }
+.message[data-role="assistant"] { justify-self: start; background: #f5f2f7; border: 1px solid #e3d8ea; }
+.message[data-pending] { opacity: .7; }
+.author { display: block; margin-bottom: .15rem; font-size: .75rem; font-weight: 700; letter-spacing: .02em; color: #425d74; }
+.message[data-role="assistant"] .author { color: var(--purple); }
+.status { font-size: .875rem; color: var(--muted); }
+
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+  padding: .55rem .55rem .55rem .8rem;
+  border: 1px solid #e2b9c2;
+  border-left: 4px solid #963549;
+  border-radius: 9px;
+  background: #fbf1f3;
+  color: #6f2536;
+  font-size: .875rem;
+}
+.notice button { flex: none; border: 1px solid #d9a6b2; border-radius: 6px; padding: .35rem .6rem; background: #fff; font-size: .8125rem; font-weight: 620; }
+.notice button:hover { background: #f7e3e8; }
+
+.composer { display: grid; gap: .35rem; }
+.composer label { font-size: .875rem; font-weight: 650; }
+.composer textarea {
+  width: 100%;
+  min-height: 4.5rem;
+  resize: vertical;
+  border: 1px solid #afb9c4;
+  border-radius: 7px;
+  padding: .5rem .6rem;
+  background: #fff;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+.actions { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.actions p { font-size: .78rem; color: var(--muted); }
+.actions button {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  flex: none;
+  border: 0;
+  border-radius: 6px;
+  padding: .5rem .85rem;
+  background: var(--purple);
+  color: #fff;
+  font-size: .875rem;
+  font-weight: 640;
+}
+.actions button:hover:not(:disabled) { background: #602d79; }
+.actions button:disabled { opacity: .52; }
+
+@media (max-width: 1279px) {
+  .panel { min-height: 0; }
+  .inner { position: static; }
+  .log { max-height: 24rem; }
+}
+@media (max-width: 440px) {
+  .actions p { display: none; }
+  .actions { justify-content: flex-end; }
+  .actions button { min-height: 2.75rem; }
+}

@@ -1,7 +1,8 @@
 """OpenRouter chat completions client.
 
 The API key comes from OPENROUTER_API_KEY, which Compose loads from the root .env at runtime.
-It is sent only in the Authorization header and never appears in errors or logs.
+It is sent only in the Authorization header and never appears in errors or logs. OPENROUTER_URL
+overrides the endpoint; browser tests point it at a fake model with a fake key.
 
 Live check from the running container:
     docker compose exec app /app/.venv/bin/python ai.py
@@ -41,7 +42,7 @@ def classify(status: int, message: str) -> Kind:
     return "provider"  # rate limits, timeouts, moderation, and other provider failures
 
 
-def complete(messages: list[dict], *, tool: dict | None = None, url: str = OPENROUTER_URL, timeout: float = 120) -> str:
+def complete(messages: list[dict], *, tool: dict | None = None, url: str | None = None, timeout: float = 120) -> str:
     """Send chat messages to the configured model and return the reply text.
 
     With a tool ({name, description, parameters}), the model must call it and the call's JSON
@@ -57,7 +58,7 @@ def complete(messages: list[dict], *, tool: dict | None = None, url: str = OPENR
         payload["tools"] = [{"type": "function", "function": tool}]
         payload["tool_choice"] = {"type": "function", "function": {"name": tool["name"]}}
     request = Request(
-        url,
+        url or os.environ.get("OPENROUTER_URL") or OPENROUTER_URL,
         data=json.dumps(payload).encode(),
         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
     )

@@ -96,6 +96,12 @@ class CompleteTests(unittest.TestCase):
             ai.complete([{"role": "user", "content": "2+2?"}], tool=tool, url=self.url, timeout=5)
         self.assertEqual(caught.exception.kind, "provider")
 
+    def test_endpoint_can_be_set_by_environment(self):
+        Stub.reply = (200, chat("4"))
+        with mock.patch.dict(os.environ, {"OPENROUTER_URL": self.url}):
+            self.assertEqual(ai.complete([{"role": "user", "content": "2+2?"}], timeout=5), "4")
+        self.assertEqual(len(Stub.received), 1)
+
     def test_missing_key_is_a_configuration_error_without_a_request(self):
         for value in ["", "   "]:
             with self.subTest(value=value), mock.patch.dict(os.environ, {"OPENROUTER_API_KEY": value}):

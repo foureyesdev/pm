@@ -33,24 +33,27 @@ function send(change: BoardChange) {
 /**
  * Loads the signed-in user's board and saves changes in order. Changes other than new cards
  * appear immediately. Once no saves are pending, or when one fails, the board shows the
- * server's last saved state.
+ * server's last saved state: the board with the highest revision received from a load, a save,
+ * or a chat turn.
  */
 export function useBoard(onSignedOut: () => void) {
   const [columns, setColumns] = useState<Column[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
   const [saving, setSaving] = useState(false);
-  const saved = useRef<Column[]>([]);
+  const saved = useRef<Board | null>(null);
   const queue = useRef(Promise.resolve());
   const pending = useRef(0);
   const signedOut = useRef(onSignedOut);
   useEffect(() => { signedOut.current = onSignedOut; });
 
+  function keep(board: Board) {
+    if (!saved.current || board.revision >= saved.current.revision) saved.current = board;
+    return saved.current.columns;
+  }
+
   const load = useCallback(() => call("GET", "/api/board").then(
-    (board) => {
-      saved.current = board.columns;
-      setColumns(board.columns);
-    },
+    (board) => setColumns(keep(board)),
     (error) => {
       if (error instanceof SignedOutError) signedOut.current();
       else setLoadFailed(true);
@@ -66,16 +69,22 @@ export function useBoard(onSignedOut: () => void) {
     queue.current = queue.current.then(async () => {
       let failed = false;
       try {
-        saved.current = (await send(next)).columns;
+        keep(await send(next));
       } catch (error) {
         if (error instanceof SignedOutError) signedOut.current();
         failed = true;
         setSaveFailed(true);
       }
       pending.current -= 1;
-      if (failed || pending.current === 0) setColumns(saved.current);
+      if (saved.current && (failed || pending.current === 0)) setColumns(saved.current.columns);
       if (pending.current === 0) setSaving(false);
     });
+  }
+
+  /** Shows a board saved elsewhere, such as by a chat turn, unless a newer one is already known. */
+  function receive(board: Board) {
+    const columns = keep(board);
+    if (pending.current === 0) setColumns(columns);
   }
 
   function retry() {
@@ -83,5 +92,5 @@ export function useBoard(onSignedOut: () => void) {
     void load();
   }
 
-  return { columns, loadFailed, saveFailed, saving, retry, change, dismissError: () => setSaveFailed(false) };
+  return { columns, loadFailed, saveFailed, saving, retry, reload: load, change, receive, dismissError: () => setSaveFailed(false) };
 }

@@ -94,7 +94,18 @@ The board changes and the test messages were then removed.
 
 ## Part 10. Deliver the AI chat sidebar
 
-- [ ] Add a sidebar to the signed-in board with conversation history, a message field, a send control, and pending and error feedback. Use the existing palette, keyboard focus conventions, and a layout that leaves the board usable on phones.
-- [ ] Load saved messages when the board opens. After a successful turn, show the reply and refresh the board automatically when cards changed. Clear the previous session's visible board and chat on logout.
-- [ ] **Test** the packaged app end to end with a deterministic provider response. Send a reply-only question and a multi-card request, verify the visible changes without reloading, then reload and sign in again after logout. Exercise a failed send, keyboard navigation, and the mobile layout. Repeat one successful chat-driven change with the live model.
-- [ ] **Acceptance:** A signed-in user can converse and see requested card changes immediately. After reload, logout/sign-in, or a container restart using the same volume, the conversation and board return in their saved order.
+- [x] Add a sidebar to the signed-in board with conversation history, a message field, a send control, and pending and error feedback. Use the existing palette, keyboard focus conventions, and a layout that leaves the board usable on phones.
+- [x] Load saved messages when the board opens. After a successful turn, show the reply and refresh the board automatically when cards changed. Clear the previous session's visible board and chat on logout.
+- [x] **Test** the packaged app end to end with a deterministic provider response. Send a reply-only question and a multi-card request, verify the visible changes without reloading, then reload and sign in again after logout. Exercise a failed send, keyboard navigation, and the mobile layout. Repeat one successful chat-driven change with the live model.
+- [x] **Acceptance:** A signed-in user can converse and see requested card changes immediately. After reload, logout/sign-in, or a container restart using the same volume, the conversation and board return in their saved order.
+
+Verified on 2026-11-28 with lint, type checking, 35 unit tests, 44 backend tests, and 41 browser cases across Chromium, Firefox, WebKit, and the emulated Pixel 7. Browser tests use a fake model served from the host, so they never call OpenRouter. The chat spec covers:
+
+- a reply-only question and a three-operation request, visible without a reload
+- persistence after reload, logout, and sign-in
+- a rate-limited send, a stale turn that refreshes the board, and a retry
+- pending feedback, multi-line messages, and keyboard use
+
+The first full run exposed drag failures in Firefox and WebKit. With a long history, the sidebar made the page taller, and Firefox scrolled the page when a drag began. The panel now fills the board's row instead. The next full run passed.
+
+Live check on the :8000 app: a request through the sidebar added a card to Done, which appeared without a reload. After the container was recreated on the same volume, the card and the conversation returned. The test card and messages were then removed.

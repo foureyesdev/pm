@@ -1,4 +1,7 @@
 import { expect, test as base, type APIRequestContext } from "@playwright/test";
+import { FakeModel, startModelServer } from "./fake-model";
+
+export { respond } from "./fake-model";
 
 // The sample board each test starts from, in display order. The server assigns new card IDs.
 const sample = [
@@ -39,7 +42,20 @@ async function resetBoard(request: APIRequestContext) {
   }
 }
 
-export const test = base.extend({
+type ModelServer = Awaited<ReturnType<typeof startModelServer>>;
+
+export const test = base.extend<{ model: FakeModel }, { modelServer: ModelServer }>({
+  modelServer: [async ({}, provide) => {
+    const server = await startModelServer();
+    await provide(server);
+    await server.close();
+  }, { scope: "worker", auto: true }],
+  model: async ({ modelServer }, provide) => {
+    const model = new FakeModel();
+    modelServer.use(model);
+    await provide(model);
+    modelServer.use(null);
+  },
   page: async ({ page }, runTest) => {
     const session = await page.request.post("/api/session", {
       data: { username: "user", password: "password" },
