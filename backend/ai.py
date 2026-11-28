@@ -41,15 +41,24 @@ def classify(status: int, message: str) -> Kind:
     return "provider"  # rate limits, timeouts, moderation, and other provider failures
 
 
-def complete(messages: list[dict], *, url: str = OPENROUTER_URL, timeout: float = 120) -> str:
-    """Send chat messages to the configured model and return the reply text."""
+def complete(messages: list[dict], *, tool: dict | None = None, url: str = OPENROUTER_URL, timeout: float = 120) -> str:
+    """Send chat messages to the configured model and return the reply text.
+
+    With a tool ({name, description, parameters}), the model must call it and the call's JSON
+    arguments are returned instead. The free endpoint has no response_format support, so a
+    forced tool call is how replies follow a schema.
+    """
     api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
     if not api_key:
         raise AIError("configuration", "OPENROUTER_API_KEY is not set")
 
+    payload: dict = {"model": MODEL, "messages": messages}
+    if tool:
+        payload["tools"] = [{"type": "function", "function": tool}]
+        payload["tool_choice"] = {"type": "function", "function": {"name": tool["name"]}}
     request = Request(
         url,
-        data=json.dumps({"model": MODEL, "messages": messages}).encode(),
+        data=json.dumps(payload).encode(),
         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
     )
     try:
@@ -74,7 +83,8 @@ def complete(messages: list[dict], *, url: str = OPENROUTER_URL, timeout: float 
         logger.warning("OpenRouter provider error in response: %s", message)
         raise AIError("provider", f"The model provider failed: {message}")
     try:
-        content = body["choices"][0]["message"]["content"]
+        message = body["choices"][0]["message"]
+        content = message["tool_calls"][0]["function"]["arguments"] if tool else message["content"]
     except (KeyError, IndexError, TypeError):
         raise AIError("provider", "OpenRouter returned no reply message") from None
     if not content or not content.strip():

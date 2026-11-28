@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
+import chat
 import storage
 
 app = FastAPI(title="Fieldwork")
@@ -44,6 +45,10 @@ class CardEdit(BaseModel):
 class CardMove(CamelModel):
     column_id: str
     before_id: str | None = None
+
+
+class ChatMessage(BaseModel):
+    message: str
 
 
 async def current_user(session: SessionCookie = None) -> str:
@@ -127,6 +132,21 @@ def move_card(card_id: str, body: CardMove, username: User) -> dict:
     return store.update(
         username, lambda db, board: storage.move_card(db, board, card_id, body.column_id, body.before_id)
     )
+
+
+@app.exception_handler(chat.ChatError)
+async def chat_failed(request: Request, error: chat.ChatError) -> JSONResponse:
+    return JSONResponse({"detail": str(error), "kind": error.kind}, status_code=error.status)
+
+
+@app.get("/api/chat")
+def get_chat(username: User) -> dict:
+    return {"messages": chat.history(store, username)}
+
+
+@app.post("/api/chat")
+def send_chat(body: ChatMessage, username: User) -> dict:
+    return chat.send(store, username, body.message)
 
 
 @app.get("/api/health")

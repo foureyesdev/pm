@@ -1,7 +1,7 @@
 """SQLite storage for each user's board, following docs/schema.json and docs/database.md.
 
 The mutation functions take an open transaction and a board ID so a batch of them can run
-inside one Store.update call. The AI integration reuses them the same way.
+inside one Store.update or Store.run call. The chat turn in chat.py applies AI batches through them.
 """
 
 import sqlite3
@@ -94,17 +94,21 @@ class Store:
         with closing(sqlite3.connect(self.path)) as db:
             db.executescript(SCHEMA)
 
-    def board(self, username: str) -> dict:
+    def run[T](self, username: str, work: Callable[[Db, int], T]) -> T:
+        """Run work(db, board_id) for the user's board in one transaction. An exception rolls it back."""
         with self._transaction() as db:
-            return read_board(db, board_for(db, username))
+            return work(db, board_for(db, username))
+
+    def board(self, username: str) -> dict:
+        return self.run(username, read_board)
 
     def update(self, username: str, change: Callable[[Db, int], object]) -> dict:
         """Apply change(db, board_id) and one revision increment in a single transaction."""
-        with self._transaction() as db:
-            board = board_for(db, username)
+        def work(db: Db, board: int) -> dict:
             change(db, board)
-            db.execute("UPDATE boards SET revision = revision + 1 WHERE id = ?", (board,))
+            bump_revision(db, board)
             return read_board(db, board)
+        return self.run(username, work)
 
     @contextmanager
     def _transaction(self) -> Iterator[Db]:
@@ -155,6 +159,23 @@ def read_board(db: Db, board: int) -> dict:
         "revision": revision,
         "columns": [columns[stage] for stage in STAGES],
     }
+
+
+def bump_revision(db: Db, board: int) -> None:
+    db.execute("UPDATE boards SET revision = revision + 1 WHERE id = ?", (board,))
+
+
+def read_messages(db: Db, board: int) -> list[dict]:
+    rows = db.execute("SELECT id, role, content FROM chat_messages WHERE board_id = ? ORDER BY id", (board,))
+    return [{"id": message, "role": role, "content": content} for message, role, content in rows]
+
+
+def add_message(db: Db, board: int, role: str, content: str) -> dict:
+    content = required(content, "Message")
+    message = db.execute(
+        "INSERT INTO chat_messages (board_id, role, content) VALUES (?, ?, ?)", (board, role, content)
+    ).lastrowid
+    return {"id": message, "role": role, "content": content}
 
 
 def rename_column(db: Db, board: int, column: str, name: str) -> None:

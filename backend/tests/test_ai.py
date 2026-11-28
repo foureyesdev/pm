@@ -81,6 +81,21 @@ class CompleteTests(unittest.TestCase):
             "messages": [{"role": "user", "content": "What is 2+2?"}],
         })
 
+    def test_tool_mode_forces_the_call_and_returns_its_arguments(self):
+        tool = {"name": "respond", "description": "Reply.", "parameters": {"type": "object"}}
+        arguments = json.dumps({"reply": "4", "operations": []})
+        call = {"type": "function", "function": {"name": "respond", "arguments": arguments}}
+        Stub.reply = (200, json.dumps({"choices": [{"message": {"content": None, "tool_calls": [call]}}]}).encode())
+        self.assertEqual(ai.complete([{"role": "user", "content": "2+2?"}], tool=tool, url=self.url, timeout=5), arguments)
+        body = Stub.received[0]["body"]
+        self.assertEqual(body["tools"], [{"type": "function", "function": tool}])
+        self.assertEqual(body["tool_choice"], {"type": "function", "function": {"name": "respond"}})
+
+        Stub.reply = (200, chat("I will not call the tool."))
+        with self.assertRaises(ai.AIError) as caught:
+            ai.complete([{"role": "user", "content": "2+2?"}], tool=tool, url=self.url, timeout=5)
+        self.assertEqual(caught.exception.kind, "provider")
+
     def test_missing_key_is_a_configuration_error_without_a_request(self):
         for value in ["", "   "]:
             with self.subTest(value=value), mock.patch.dict(os.environ, {"OPENROUTER_API_KEY": value}):

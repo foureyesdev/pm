@@ -75,11 +75,22 @@ Verified on 2026-11-27. The live check in the container replied "2 + 2 = 4". All
 
 ## Part 9. Apply structured AI replies and persist chat
 
-- [ ] Add authenticated routes to read conversation history and send a message. For each send, load the current board and ordered history for the signed-in user. Send the board as JSON with the prior conversation and the new question.
-- [ ] Request Structured Outputs with an assistant reply and an optional batch of card creates, edits, or moves. Verify that the configured model and provider support the schema with a live example before relying on it.
-- [ ] Validate the whole batch against the user's board and apply it through the Part 6 mutation logic. If the board changed while awaiting the model, reject the stale update and allow a retry. Commit the successful chat turn and its board changes together.
-- [ ] **Test** with a mocked provider for a reply-only question, each operation, a multi-card request, a malformed reply, an invalid second operation, a stale board, and provider failure. Inspect the outgoing request for board and history context. Verify ordered history after reload and logout/sign-in, and isolation with a second fixture user.
-- [ ] **Acceptance:** A reply-only turn preserves the board. A valid batch persists every requested change, and an invalid batch applies none. The next turn receives the saved conversation and current board.
+- [x] Add authenticated routes to read conversation history and send a message. For each send, load the current board and ordered history for the signed-in user. Send the board as JSON with the prior conversation and the new question.
+- [x] Request Structured Outputs with an assistant reply and an optional batch of card creates, edits, or moves. Verify that the configured model and provider support the schema with a live example before relying on it.
+- [x] Validate the whole batch against the user's board and apply it through the Part 6 mutation logic. If the board changed while awaiting the model, reject the stale update and allow a retry. Commit the successful chat turn and its board changes together.
+- [x] **Test** with a mocked provider for a reply-only question, each operation, a multi-card request, a malformed reply, an invalid second operation, a stale board, and provider failure. Inspect the outgoing request for board and history context. Verify ordered history after reload and logout/sign-in, and isolation with a second fixture user.
+- [x] **Acceptance:** A reply-only turn preserves the board. A valid batch persists every requested change, and an invalid batch applies none. The next turn receives the saved conversation and current board.
+
+Verified on 2026-11-27. A live probe showed that the `:free` endpoint has no `response_format` support: with `require_parameters`, OpenRouter answered 404, "No endpoints found that can handle the requested parameters". Without that flag, the schema was silently dropped. A forced tool call with the same schema is supported, so replies use one, and the server validates every reply. All 43 backend tests passed, including 10 chat tests with a mocked model against temporary databases and 3 chat route tests against the container.
+
+Live turns through `POST /api/chat` on the container:
+
+- A reply-only question ("There are 2 cards in the Done column.") left the board and its revision unchanged.
+- A request to add a card to Review and move "Define the sitemap" to the top of Backlog applied both changes under a single revision.
+- After logout and sign-in, the history returned in order.
+- A follow-up question correctly named the card just added.
+
+The board changes and the test messages were then removed.
 
 ## Part 10. Deliver the AI chat sidebar
 
